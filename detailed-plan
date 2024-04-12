@@ -40,7 +40,7 @@
 ### Example Code Structure:
 
 ```
-monitoring_tool/
+ monitoring_tool/
 │
 ├── monitoring_tool.py          # Main script for system monitoring and Interactive dashboard using curses
 ├                               # Email configuration (SMTP server, credentials)
