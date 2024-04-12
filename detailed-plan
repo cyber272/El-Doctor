@@ -42,13 +42,12 @@
 ```
 monitoring_tool/
 │
-├── monitoring_tool.py          # Main script for system monitoring
-├                               # Interactive dashboard using curses
+├── monitoring_tool.py          # Main script for system monitoring and Interactive dashboard using curses
 ├                               # Email configuration (SMTP server, credentials)
-├── README.md           # Documentation and usage instructions
-└── data/
-    ├── metrics.csv     # CSV file for storing collected metrics
-    └── logs/           # Folder for logs (optional)
+├
+├── README.md                   # Documentation and usage instructions
+├── metrics.csv                 # CSV file for storing collected metrics
+└── logs/                       # Folder for logs (optional)
 ```
 
 ### Additional Considerations:

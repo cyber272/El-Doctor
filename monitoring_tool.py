@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import psutil
 import csv
 import curses
@@ -5,13 +6,16 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import time
+import socket
+import platform
 
-# Email configuration
-SMTP_SERVER = 'your_smtp_server'
+# Gmail SMTP configuration
+SMTP_SERVER = 'smtp.gmail.com'
 SMTP_PORT = 587
-SMTP_USERNAME = 'your_email_username'
-SMTP_PASSWORD = 'your_email_password'
-RECIPIENT_EMAIL = 'recipient@example.com'
+SMTP_USERNAME = ''  # Your Gmail address
+SMTP_PASSWORD = ''  # Your Gmail password or app password
+RECIPIENT_EMAIL = ''  # Email address to receive notifications
+
 
 # Monitoring thresholds
 MEMORY_THRESHOLD = 90  # Percent
@@ -19,16 +23,38 @@ CPU_THRESHOLD = 80  # Percent
 
 # Function to collect system metrics
 def collect_system_metrics():
+    # Get CPU usage
     cpu_percent = psutil.cpu_percent()
-    memory_percent = psutil.virtual_memory().percent
-    disk_usage = psutil.disk_usage('/').percent
+
+    # Get memory usage
+    memory = psutil.virtual_memory()
+    memory_percent = memory.percent
+
+    # Get disk usage
+    disk = psutil.disk_usage('/')
+    disk_percent = disk.percent
+
+    # Get network I/O
     network_io = psutil.net_io_counters().bytes_sent + psutil.net_io_counters().bytes_recv
 
-    return cpu_percent, memory_percent, disk_usage, network_io
+    # Get system uptime
+    uptime = time.time() - psutil.boot_time()
+
+    # Get OS information
+    os_info = f"{platform.system()} {platform.release()}"
+
+    # Get hostname and IP address
+    hostname = socket.gethostname()
+    ip_address = socket.gethostbyname(hostname)
+
+    # Get DNS server
+    dns_servers = ', '.join(socket.gethostbyname_ex(socket.gethostname())[2])
+
+    return cpu_percent, memory_percent, disk_percent, network_io, uptime, os_info, hostname, ip_address, dns_servers
 
 # Function to write metrics to CSV file
 def write_to_csv(metrics):
-    timestamp = time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # Current timestamp with microseconds
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")  # Current timestamp
     metrics.insert(0, timestamp)  # Insert timestamp at the beginning of the metrics list
 
     with open('metrics.csv', 'a', newline='') as file:
@@ -63,7 +89,7 @@ def display_dashboard(stdscr):
         stdscr.clear()
 
         # Get system metrics
-        cpu_percent, memory_percent, disk_percent, network_io = collect_system_metrics()
+        cpu_percent, memory_percent, disk_percent, network_io, uptime, os_info, hostname, ip_address, dns_servers = collect_system_metrics()
 
         # Print header
         stdscr.addstr(1, 1, "System Metrics", curses.A_BOLD | curses.color_pair(1))
@@ -84,14 +110,33 @@ def display_dashboard(stdscr):
         stdscr.addstr(9, 1, "Network I/O:", curses.A_BOLD)
         stdscr.addstr(9, 15, f"{network_io} bytes", curses.A_DIM)
 
+        # Print OS information
+        stdscr.addstr(11, 1, "OS:", curses.A_BOLD)
+        stdscr.addstr(11, 5, os_info)
+
+        # Print Hostname and IP address
+        stdscr.addstr(13, 1, "Hostname:", curses.A_BOLD)
+        stdscr.addstr(13, 11, hostname)
+
+        stdscr.addstr(14, 1, "IP Address:", curses.A_BOLD)
+        stdscr.addstr(14, 13, ip_address)
+
+        # Print DNS server
+        stdscr.addstr(16, 1, "DNS Server:", curses.A_BOLD)
+        stdscr.addstr(16, 13, dns_servers)
+
+        # Print Uptime
+        stdscr.addstr(18, 1, "Uptime:", curses.A_BOLD)
+        stdscr.addstr(18, 9, f"{uptime // 3600} hours {uptime % 3600 // 60} minutes")
+
         # Print timestamp
-        stdscr.addstr(12, 1, "Last Updated: " + time.strftime("%Y-%m-%d %H:%M:%S"), curses.A_BOLD | curses.A_DIM)
+        stdscr.addstr(21, 1, "Last Updated: " + time.strftime("%Y-%m-%d %H:%M:%S"), curses.A_BOLD | curses.A_DIM)
 
         stdscr.refresh()
         time.sleep(1)  # Update every 1 second
 
         # Write metrics to CSV
-        metrics = [cpu_percent, memory_percent, disk_percent, network_io]
+        metrics = [cpu_percent, memory_percent, disk_percent, network_io, uptime, os_info, hostname, ip_address, dns_servers]
         write_to_csv(metrics)
 
         # Check for critical states and send email alert
@@ -112,3 +157,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
